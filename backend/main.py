@@ -20,85 +20,149 @@ app = FastAPI()
 # Configure CORS
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000"], 
+    allow_origins=["*"],  # Change to your frontend URL after deployment
     allow_credentials=True,
-    allow_methods=["GET", "POST", "PUT", "DELETE"],
+    allow_methods=["*"],
     allow_headers=["*"],
 )
+
 
 @app.get("/")
 def root():
     return {"message": "Backend Server Running"}
 
+
 @app.post("/upload")
-async def upload_image(image: UploadFile = File(...),mode: str = Form(...)):
+async def upload_image(
+    image: UploadFile = File(...),
+    mode: str = Form(...)
+):
     try:
-        
         image_data = await image.read()
 
         input_image_path = "image_input.jpg"
         output_image_path = "image_output.jpg"
-        
+
         additional_data = ""
 
         with open(input_image_path, "wb") as f:
             f.write(image_data)
 
-        if(mode=="contrast"):
+        # ---------------- Contrast Enhancement ----------------
+
+        if mode == "contrast":
             contrast_enhancement(input_image_path, output_image_path)
-        elif(mode=="contrast_qd"):
+
+        elif mode == "contrast_qd":
             qhe_contrast_enhancement(input_image_path, output_image_path)
-        elif(mode=="contrast_gl"):
+
+        elif mode == "contrast_gl":
             clahe_contrast_enhancement(input_image_path, output_image_path)
-            
-        elif(mode=="saltpepper"):
+
+        # ---------------- Salt & Pepper Noise ----------------
+
+        elif mode == "saltpepper":
             salt_pepper_noise(input_image_path, output_image_path)
-        elif(mode=="saltpepper_fas"):
-            salt_pepper_noise(input_image_path, output_image_path,1)
-        elif(mode=="saltpepper_lpd"):
-            salt_pepper_noise(input_image_path, output_image_path,4)
-            
-        elif(mode=="gaussian"):
+
+        elif mode == "saltpepper_fas":
+            salt_pepper_noise(input_image_path, output_image_path, 1)
+
+        elif mode == "saltpepper_lpd":
+            salt_pepper_noise(input_image_path, output_image_path, 4)
+
+        # ---------------- Gaussian Noise ----------------
+
+        elif mode == "gaussian":
             gaussian_noise(input_image_path, output_image_path)
-        elif(mode=="gaussian_spt"):
+
+        elif mode == "gaussian_spt":
             gaussian_noise(input_image_path, output_image_path)
-        elif(mode=="gaussian_owbf"):
+
+        elif mode == "gaussian_owbf":
             weighted_bilateral_filter(input_image_path, output_image_path)
-            
-        elif(mode=="segment"):
+
+        # ---------------- Segmentation ----------------
+
+        elif mode == "segment":
             image_segmentation(input_image_path, output_image_path)
-        elif(mode=="segment_rfcm"):
-            image_segmentation(input_image_path, output_image_path,5) 
-        elif(mode=="segment_fcmnls"):
-            fcm_segmentation(input_image_path, output_image_path,5) 
-            
-        elif(mode=="classify"):
-            model_path = "models\\cnn_model.keras"
-            additional_data += classification(model_path,input_image_path, output_image_path)    
-        elif(mode=="classify_effnet"):
-            model_path = "models\\effnet_model.keras"
-            additional_data += classification(model_path,input_image_path, output_image_path)
-        elif(mode=="classify_mobnet"):
-            model_path = "models\\mobnet_model.keras"
-            additional_data += classification(model_path,input_image_path, output_image_path)
-        elif(mode=="classify_xception"):
-            model_path = "models\\xception_model.keras"
-            additional_data += classification(model_path,input_image_path, output_image_path)
-        elif(mode=="classify_inception"):
-            model_path = "models\\inception_model.keras"
-            additional_data += classification(model_path,input_image_path, output_image_path)
-            
-        elif(mode=="analysis"):
-            additional_data += analysis(input_image_path, output_image_path)     
+
+        elif mode == "segment_rfcm":
+            image_segmentation(input_image_path, output_image_path, 5)
+
+        elif mode == "segment_fcmnls":
+            fcm_segmentation(input_image_path, output_image_path, 5)
+
+        # ---------------- Classification ----------------
+
+        elif mode == "classify":
+            model_path = "models/cnn_model.keras"
+            additional_data += classification(
+                model_path,
+                input_image_path,
+                output_image_path
+            )
+
+        elif mode == "classify_effnet":
+            model_path = "models/effnet_model.keras"
+            additional_data += classification(
+                model_path,
+                input_image_path,
+                output_image_path
+            )
+
+        elif mode == "classify_mobnet":
+            model_path = "models/mobnet_model.keras"
+            additional_data += classification(
+                model_path,
+                input_image_path,
+                output_image_path
+            )
+
+        elif mode == "classify_xception":
+            model_path = "models/xception_model.keras"
+            additional_data += classification(
+                model_path,
+                input_image_path,
+                output_image_path
+            )
+
+        elif mode == "classify_inception":
+            model_path = "models/inception_model.keras"
+            additional_data += classification(
+                model_path,
+                input_image_path,
+                output_image_path
+            )
+
+        # ---------------- Analysis ----------------
+
+        elif mode == "analysis":
+            additional_data += analysis(
+                input_image_path,
+                output_image_path
+            )
+
+        # ---------------- Default ----------------
+
         else:
             same_image(input_image_path, output_image_path)
-        
-        # Encode the image file as base64
+
+        # Encode output image to Base64
         with open(output_image_path, "rb") as f:
-            image_data = base64.b64encode(f.read()).decode('utf-8')
-        
-        return JSONResponse(status_code=200, content={"image_data": image_data, "additional_data": additional_data})
-    
+            image_data = base64.b64encode(
+                f.read()
+            ).decode("utf-8")
+
+        return JSONResponse(
+            status_code=200,
+            content={
+                "image_data": image_data,
+                "additional_data": additional_data
+            }
+        )
+
     except Exception as e:
-        # Return an error response if an exception occurs
-        return JSONResponse(status_code=500, content={"error": str(e)})
+        return JSONResponse(
+            status_code=500,
+            content={"error": str(e)}
+        )
